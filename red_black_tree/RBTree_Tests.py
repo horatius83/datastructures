@@ -2,53 +2,136 @@ import unittest
 from RBTree import RBTreeNode, RBTreeColor, reconcile
 
 class TestRBTree(unittest.TestCase):
-    def test_nodes_default_to_red(self):
-        value = 'test'
-        n = RBTreeNode(value)
-        self.assertEqual(n.color, RBTreeColor.Red)
-        self.assertEqual(n.value, value)
-        self.assertEqual(n.left, None)
-        self.assertEqual(n.right, None)
+    def test_root(self):
+        value = 'value'
 
-    def test_root_will_reconcile_to_black(self):
-        n = RBTreeNode('test', is_root = True)
-        reconcile(n)
-        self.assertEqual(n.color, RBTreeColor.Black)
+        root = RBTreeNode(value)
 
-    def test_root_has_no_grandparent_or_parent_sibling(self):
-        n = RBTreeNode('test')
-        self.assertEqual(n.grandparent, None)
-        self.assertEqual(n.parent_sibling, None)
-
-    def test_root_has_grandparent(self):
-        n = RBTreeNode(1)
-        p = RBTreeNode(2, left=n)
-        gp = RBTreeNode(3, right=p, is_root=True)
-        self.assertEquals(n.parent, p)
-        self.assertEquals(p.left, n)
-        self.assertEqual(n.grandparent, gp)
-        self.assertEquals(gp.right, p)
+        self.assertEqual(root.color, RBTreeColor.Black)
+        self.assertEqual(root.parent, None)
+        self.assertEqual(root.left, None)
+        self.assertEqual(root.right, None)
+        self.assertEqual(root.value, value)
 
     def test_insert_less_than(self):
-        n = RBTreeNode(5)
-        less_than_node = RBTreeNode(4, is_root=True)
-        n.insert(less_than_node)
-        self.assertEquals(n.left, less_than_node)
-        self.assertEquals(less_than_node.parent, n)
+        root = RBTreeNode(5)
+        value = 4
+
+        root.insert(value)
+
+        self.assertEqual(root.color, RBTreeColor.Black)
+        self.assertNotEqual(root.left, None)
+        self.assertEqual(root.left.parent, root)
+        self.assertEqual(root.left.color, RBTreeColor.Red)
+        self.assertEqual(root.left.value, value)
+        self.assertEqual(root.left.left, None)
+        self.assertEqual(root.left.right, None)
 
     def test_insert_greater_than(self):
-        n = RBTreeNode(5, is_root=True)
-        greater_than_node = RBTreeNode(6)
-        n.insert(greater_than_node)
-        self.assertEquals(n.right, greater_than_node)
-        self.assertEquals(greater_than_node.parent, n)
+        root = RBTreeNode(5)
+        value = 6
+
+        root.insert(value)
+
+        self.assertEqual(root.color, RBTreeColor.Black)
+        self.assertNotEqual(root.right, None)
+        self.assertEqual(root.right.parent, root)
+        self.assertEqual(root.right.color, RBTreeColor.Red)
+        self.assertEqual(root.right.value, value)
+        self.assertEqual(root.right.left, None)
+        self.assertEqual(root.right.right, None)
 
     def test_insert_equal(self):
-        n = RBTreeNode(5, is_root=True)
-        equal_node = RBTreeNode(5)
-        n.insert(equal_node)
-        self.assertEquals(n.right, equal_node)
-        self.assertEquals(equal_node.parent, n)
+        root = RBTreeNode(5)
+        value = 5
+
+        root.insert(value)
+
+        self.assertEqual(root.color, RBTreeColor.Black)
+        self.assertNotEqual(root.right, None)
+        self.assertEqual(root.right.parent, root)
+        self.assertEqual(root.right.color, RBTreeColor.Red)
+        self.assertEqual(root.right.value, value)
+        self.assertEqual(root.right.left, None)
+        self.assertEqual(root.right.right, None)
+
+    def test_recoloring(self):
+        root = RBTreeNode(5)
+        root.insert(2)
+        root.insert(7)
+        root.insert(1)
+
+        self.assertEqual(root.color, RBTreeColor.Black)
+        self.assertEqual(root.left.color, RBTreeColor.Black)
+        self.assertEqual(root.right.color, RBTreeColor.Black)
+        self.assertEqual(root.left.left.color, RBTreeColor.Red)
+
+    def test_left_left_reconciliation_strategy_with_no_greatgrandparent(self):
+        root = RBTreeNode(5)
+        root.insert(4)
+        root.insert(3)
+
+        self.assertEqual(root.parent.value, 4)
+        self.assertEqual(root.left, None)
+        self.assertEqual(root.right, None)
+        self.assertEqual(root.parent.right, root)
+        self.assertEqual(root.parent.left.value, 3)
+        self.assertEqual(root.parent.left.left, None)
+        self.assertEqual(root.parent.left.right, None)
+        self.assertEqual(root.parent.left.parent, root.parent)
+
+    def test_left_right_reconciliation_strategy_with_no_greatgrandparent(self):
+        root = RBTreeNode(5)
+        for value in [7, 2, 0, 1]:
+            root.insert(value)
+        self.assertEqual(root.value, 5)
+        self.assertEqual(root.parent, None)
+        self.assertEqual(root.color, RBTreeColor.Black)
+        self.assertEqual(root.left.value, 1)
+        self.assertEqual(root.left.color, RBTreeColor.Black)
+        self.assertEqual(root.left.parent, root)
+        self.assertEqual(root.right.value, 7)
+        self.assertEqual(root.right.color, RBTreeColor.Black)
+        self.assertEqual(root.right.parent, root)
+        self.assertEqual(root.left.left.value, 0)
+        self.assertEqual(root.left.left.color, RBTreeColor.Red)
+        self.assertEqual(root.left.left.parent, root.left)
+        self.assertEqual(root.left.right.value, 2)
+        self.assertEqual(root.left.right.color, RBTreeColor.Red)
+        self.assertEqual(root.left.right.parent, root.left)
+
+    def test_right_right_reconciliation_strategy_with_no_greatgrandparent(self):
+        root = RBTreeNode(5)
+        root.insert(6)
+        root.insert(7)
+        self.assertEqual(root.value, 5)
+        self.assertEqual(root.color, RBTreeColor.Red)
+        self.assertEqual(root.parent.left, root)
+        self.assertEqual(root.parent.value, 6)
+        self.assertEqual(root.parent.color, RBTreeColor.Black)
+        self.assertEqual(root.parent.right.value, 7)
+        self.assertEqual(root.parent.right.color, RBTreeColor.Red)
+
+    def test_right_left_reconciliation_strategy_with_no_greatgrandparent(self):
+        root = RBTreeNode(5)
+        for value in [7,2,10,9]:
+            root.insert(value)
+        self.assertEqual(root.value, 5)
+        self.assertEqual(root.color, RBTreeColor.Black)
+        self.assertEqual(root.left.value, 2)
+        self.assertEqual(root.left.color, RBTreeColor.Black)
+        self.assertEqual(root.left.parent, root)
+        self.assertEqual(root.right.value, 9)
+        self.assertEqual(root.right.color, RBTreeColor.Black)
+        self.assertEqual(root.right.parent, root)
+        self.assertEqual(root.right.left.value, 7)
+        self.assertEqual(root.right.left.color, RBTreeColor.Red)
+        self.assertEqual(root.right.left.parent, root.right)
+        self.assertEqual(root.right.right.value, 10)
+        self.assertEqual(root.right.right.color, RBTreeColor.Red)
+        self.assertEqual(root.right.right.parent, root.right)
+
+
 
 if __name__ == '__main__':
     unittest.main()
