@@ -9,12 +9,16 @@ class RBTreeNode:
     """Node inside a Red-Black Tree"""
     __slots__ = ['parent', 'left', 'right', 'value', 'color']
 
-    def __init__(self, parent, left, right, value):
-        self.parent = parent
+    def __init__(self, value, left=None, right=None, is_root=False):
+        self.parent = None
         self.left = left
+        if left != None:
+            left.parent = self
         self.right = right
+        if right != None:
+            right.parent = self
         self.value = value
-        self.color = RBTreeColor.Red
+        self.color = RBTreeColor.Black if is_root else RBTreeColor.Red
 
     @property
     def grandparent(self):
