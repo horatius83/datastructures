@@ -1,5 +1,5 @@
 import unittest
-from RBTree import RBTreeNode, RBTreeColor, reconcile
+from RBTree import RBTreeNode, RBTreeColor, reconcile_insert
 
 class TestRBTree(unittest.TestCase):
     def test_root(self):

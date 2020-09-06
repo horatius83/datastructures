@@ -37,6 +37,15 @@ class RBTreeNode:
             return gp.left
         return None
 
+    @property
+    def sibling(self):
+        parent = self.parent
+        if parent is not None:
+            if parent.left == self:
+                return parent.right
+            else:
+                return parent.left
+
     def insert(self, value):
         if value is None:
             print('Cannot insert nothing')
@@ -49,7 +58,7 @@ class RBTreeNode:
                 node.color = RBTreeColor.Red
                 node.parent = self
                 self.left = node
-                reconcile(node)
+                reconcile_insert(node)
         else:
             if self.right is not None:
                 self.right.insert(value)
@@ -58,7 +67,42 @@ class RBTreeNode:
                 node.color = RBTreeColor.Red
                 node.parent = self
                 self.right = node
-                reconcile(node)
+                reconcile_insert(node)
+
+    # If you're the root, you cannot delete yourself so what should this do?
+    def delete(self, value):
+        if value < self.value:
+            if self.left is not None:
+                self.left.delete(value)
+            return None
+        if value > self.value:
+            if self.right is not None:
+                self.right.delete(value)
+            return None
+
+        if self.left is not None:
+            if self.right is not None:
+                pass
+            else:
+                pass
+        elif self.right is not None: 
+            parent = self.parent
+            if parent is not None:
+                if parent.left == self:
+                    parent.left = self.right
+                    self.right.parent = parent
+                else:
+                    parent.right = self.right
+                    self.right.parent = parent
+        else: # This is a leaf   
+            parent = self.parent
+            if parent is not None:
+                if parent.left == self:
+                    parent.left = None
+                else:
+                    parent.right = None
+        self.parent = None
+        self.value = None
 
 def left_left_rotation(node: Type[RBTreeNode]):
     greatgrandparent = node.greatgrandparent
@@ -129,7 +173,7 @@ redBlackTreeReconciliationStrategy  = {
     0: right_right_rotation
 }
 
-def reconcile(node: Type[RBTreeNode]):
+def reconcile_insert(node: Type[RBTreeNode]):
     """Given a Red-Black Tree node, change the tree-structure so that the Red-Black Tree is well formed"""
     if node is None:
         print('Cannot reconcile an empty node')
@@ -147,9 +191,11 @@ def reconcile(node: Type[RBTreeNode]):
                 parent_sibling.color = RBTreeColor.Black
             node.parent.color = RBTreeColor.Black
             node.grandparent.color = RBTreeColor.Red
-            reconcile(node.grandparent)
+            reconcile_insert(node.grandparent)
             return
         else:
+            # depending on the relationship between the node, parent, and grandparent apply different strategies
+            # to balance the tree
             grandparent = node.grandparent
             parent = node.parent
             left_of_parent_code = 1 if parent.left == node else 0
