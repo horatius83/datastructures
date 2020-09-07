@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Type
+from typing import Type, Any, Optional
 
 class RBTreeColor:
     Red = 1
@@ -69,40 +69,94 @@ class RBTreeNode:
                 self.right = node
                 reconcile_insert(node)
 
-    # If you're the root, you cannot delete yourself so what should this do?
-    def delete(self, value):
-        if value < self.value:
-            if self.left is not None:
-                self.left.delete(value)
-            return None
-        if value > self.value:
-            if self.right is not None:
-                self.right.delete(value)
-            return None
+def inorder(node: Type[RBTreeNode]) -> Iterable[RBTreeNode]:
+    if node.left:
+        yield from inorder(node.left)
+    yield node
+    if node.right:
+        yield from inorder(node.right)
 
-        if self.left is not None:
-            if self.right is not None:
-                pass
+def delete(node: Type[RBTreeNode], value: Any) -> Optional[RBTreeNode]:
+    def clear_node_data(node: Type[RBTreeNode]):
+        node.parent, node.left, node.right, node.value = None, None, None, None
+    # If this isn't the value, try finding the right node
+    if value < node.value:
+        if node.left is not None:
+            delete(node.left, value)
+        return None
+    if value > node.value:
+        if node.right is not None:
+            delete(node.right, value)
+        return None
+    if value != node.value:
+        raise ValueError(f'Attempted to delete {value}, but {value} could not be found')
+
+    if node.left is not None:
+        if node.right is not None: # both children are not None
+            # get the next inorder node
+            next_inorder_node = next(inorder(node.right))
+            next_inorder_node_parent = next_inorder_node.parent
+            if next_inorder_node.right is not None:
+                next_inorder_node_parent.left = next_inorder_node.right
+                next_inorder_node.right.parent = next_inorder_node_parent
             else:
-                pass
-        elif self.right is not None: 
-            parent = self.parent
+                next_inorder_node_parent.left = None
+            # insert next inorder node into current nodes space
+            next_inorder_node.parent = node.parent
+            if next_inorder_node.parent.left == node:
+                next_inorder_node.parent.left = next_inorder_node
+            else:
+                next_inorder_node.parent.right = next_inorder_node
+            next_inorder_node.left = node.left
+            next_inorder_node.right = node.right
+            node.left.parent = next_inorder_node
+            node.right.parent = next_inorder_node
+            clear_node_data(node)
+            return next_inorder_node
+        else: # only the right child is None
+            parent = node.parent
             if parent is not None:
-                if parent.left == self:
-                    parent.left = self.right
-                    self.right.parent = parent
+                left = node.left
+                left.parent = parent
+                if parent.left == node:
+                    parent.left = left
                 else:
-                    parent.right = self.right
-                    self.right.parent = parent
-        else: # This is a leaf   
-            parent = self.parent
-            if parent is not None:
-                if parent.left == self:
-                    parent.left = None
-                else:
-                    parent.right = None
-        self.parent = None
-        self.value = None
+                    parent.right = left
+                clear_node_data(node)
+                return parent
+            else:
+                new_root = node.left
+                new_root.parent = None
+                clear_node_data(node)
+                return new_root
+    elif node.right is not None: # left is None
+        parent = node.parent
+        if parent is not None:
+            if parent.left == node:
+                parent.left = node.right
+                node.right.parent = parent
+            else:
+                parent.right = node.right
+                node.right.parent = parent
+            clear_node_data(node)
+            return parent
+        else: # This is the root and node.right is its' only child
+            node.right.parent = None
+            new_root = node.right
+            clear_node_data(node)
+            return new_root
+    else: # This is a leaf   
+        parent = node.parent
+        if parent is not None:
+            if parent.left == node:
+                parent.left = None
+            else:
+                parent.right = None
+            clear_node_data(node)
+            return parent
+        else: # This is the root and there are no children
+            clear_node_data(node)
+            return None
 
 def left_left_rotation(node: Type[RBTreeNode]):
     greatgrandparent = node.greatgrandparent
